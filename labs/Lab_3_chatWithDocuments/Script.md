@@ -61,7 +61,7 @@ The Azure Function App also deploys the function code needed for powerapps autom
 As part of data preparation step, to work in Open AI, the documents are chunked into smaller units(20 lines) and stored as individual documents in the search index. The chunking steps can be achieved with a python script below. 
 To make it easy for the labs, the sample document has already been chunked and provided in the repo. 
 
-* Enable Semantic Search on Azure Portal. Navigate to Semantic Search blade and select Free plan. 
+* Search for Cognitive Search on Azure Portal, Select the Cognitive Search and Navigate to Semantic Search blade and select Free plan. 
 
     ![Alt text](Images/lab3_image2_semanticsearchplan.png)
     
@@ -109,7 +109,6 @@ To make it easy for the labs, the sample document has already been chunked and p
     This repo uses Python. Run the below script to create search index, add semantic configuration and populate few sample documents from Azure doc. 
     The search indexer chunks a sample pdf document(500 pages) which is downloaded from azure docs and chunks each page into 20 lines. Each chunk is created as a new seach doc in the index. The pdf document processing is achieved using Azure Form Recognizer service. 
     
-        cd OpenAIWorkshop/labs/Lab_3_chatWithDocuments/ingest
         python search-indexer.py
         
 
@@ -125,7 +124,7 @@ To make it easy for the labs, the sample document has already been chunked and p
 
     ![Alt text](Images/lab3_image25_postmethod.png)
 
-* In The enter URL, enter the URL of the Function app that you have created. Please refer to [this doc](ShowKeysandSecrets.md) to retrieve Function App Url 
+* In the Enter URL or paste text box, enter the URL of the Function app that you have created. Please refer to [this doc](ShowKeysandSecrets.md) to retrieve Function App Url 
 
     ![Alt text](Images/lab3_image26_posturl.png)
 
@@ -138,7 +137,7 @@ To make it easy for the labs, the sample document has already been chunked and p
     ![Alt text](Images/lab3_image27_numsearch.png)
 
 
-* Now, you can test the function app by providing the below prompt in the 'Body' tab of the postman and press 'Send'. You must recieve the text result in the response window of the postman.
+* Now, you can test the function app by providing the below prompt as raw text in the 'Body' tab of the postman and press 'Send'. You must receive the text result in the response window of the postman.
 
         {"prompt" : "Is GPU supported in AML"}
 
