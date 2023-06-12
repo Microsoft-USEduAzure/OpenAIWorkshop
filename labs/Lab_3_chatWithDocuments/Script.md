@@ -33,10 +33,9 @@ Follow following steps to get the Azure API endpoint and API key. Save the endpo
 
 
 To get the Azure OpenAI Model deployment name, click on the deployment under Management, and copy the model deploment name.
-
-
-    ![Alt text](Images/lab3_image17_deploymentname.png)
-
+        
+   ![Alt text](Images/lab3_image17_deploymentname.png)
+    
 ## 1. Azure services deployment
 
 Deploy Azure Resources namely - Azure Function App to host facade for OpenAI and Search APIs, Azure Search Service and a Azure Form Recognizer resource.
@@ -150,7 +149,7 @@ To make it easy for the labs, the sample document has already been chunked and p
 
 Create a bot in Azure Bot Composer:
 
-1. Open Azure Bot Composer in your local machine.
+1. Open Bot Framework Composer in your local machine.
 
 
 2. Select Create New (+) on the homepage.
