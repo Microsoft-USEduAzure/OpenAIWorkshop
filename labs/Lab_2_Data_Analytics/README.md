@@ -60,7 +60,7 @@ from the terminal, navigate to ```cd labs/Lab_2_Data_Analytics```
 
 ## Step 2. Set up enviromental variables
 
- Provide settings for Open AI and Database.You can either create a file named `secrets.env` file in the root of this folder (labs/lab_3_data_analytics) as below or do it using the app's UI later on.
+ Provide settings for Open AI and Database.You can either create a file named `secrets.env` file in the root of this folder (labs/lab_2_data_analytics) as below or do it using the app's UI later on.
 
     - Option 1: use built-in SQLITE (recommended). Then you don't need to install SQL Server.
         ```txt
