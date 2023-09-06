@@ -108,4 +108,4 @@ Now that that we've confirmed that GPT is grounded on your data, we can deploy t
 
 The deployment will take a few minutes to complete. After it is done, there'll be an additional wait of approximiately 10 minutes for Entra ID to secure the web app. Once it is complete, you'll be able to click the **Launch Web App** icon on the top right of the screen to take you to your new chat bot.
 
-    ![Add your data](media/deploy-app-03.png)
+![Add your data](media/deploy-app-03.png)
