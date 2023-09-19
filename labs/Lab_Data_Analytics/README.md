@@ -64,7 +64,7 @@ URL: https://github.com/Microsoft-USEduAzure/OpenAIWorkshop.git
 
 ![](../Images/lab-3-data-2.png)
 
-From the terminal, navigate to ```cd labs/Lab_Data_Analytics```
+From the terminal, navigate to ```cd OpenAIWorkshop/labs/Lab_Data_Analytics```
 
 ## Step 2. Set up enviromental variables
 
@@ -100,7 +100,7 @@ From the terminal, navigate to ```cd labs/Lab_Data_Analytics```
 
 ### Step 3.1 Navigate to the Lab_Data_Analytics directory of this lab
 
-To Navigate ```cd OpenAIWorkshop/labs/Lab_Data_Analytics```
+To Navigate ```cd OpenAIWorkshop/labs/Lab_Data_Analytics``` if not done already in the step 1.
 
 ### Step 3.2 Create a python environment with version from 3.7 and 3.10
 
