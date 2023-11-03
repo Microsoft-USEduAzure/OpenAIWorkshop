@@ -1,0 +1,608 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.22.6.54827",
+      "templateHash": "8210918205878589293"
+    }
+  },
+  "parameters": {
+    "emailLogicAppName": {
+      "type": "string",
+      "defaultValue": "email-techsupport-integration"
+    },
+    "openAIServiceKey": {
+      "type": "securestring"
+    },
+    "openAIUri": {
+      "type": "string"
+    },
+    "openAIDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-35-turbo-16k"
+    },
+    "readMailboxLogicAppName": {
+      "type": "string",
+      "defaultValue": "read-mailbox-techsupport"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "office365",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "api": {
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', resourceGroup().location, 'office365')]"
+        },
+        "displayName": "Your Office 365 Account"
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "conversionservice",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "api": {
+          "description": "A service that allows content to be converted from one format to another.",
+          "iconUri": "https://connectoricons-prod.azureedge.net/releases/v1.0.1625/1.0.1625.3226/conversionservice/icon.png",
+          "brandColor": "#4f6bed",
+          "type": "Microsoft.Web/locations/managedApis",
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', resourceGroup().location, 'conversionservice')]"
+        },
+        "displayName": "Content Conversion"
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('emailLogicAppName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {
+                  "properties": {
+                    "emailto": {
+                      "type": "string"
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "actions": {
+            "Condition": {
+              "actions": {
+                "Send_an_email_(V2)": {
+                  "runAfter": {},
+                  "type": "ApiConnection",
+                  "inputs": {
+                    "body": {
+                      "Body": "<p>Hello,<br>\n<br>\nThank you for reaching out to us. Support ticket No. 456454 has been created for you. We should contact you shortly</p>",
+                      "Importance": "Normal",
+                      "Subject": "Support ticket No. 456454 ",
+                      "To": "@triggerBody()?['emailto']"
+                    },
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['office365']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/v2/Mail"
+                  }
+                }
+              },
+              "runAfter": {
+                "Send_email_with_options": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@body('Send_email_with_options')?['SelectedOption']",
+                      "Not Useful"
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "For_each": {
+              "foreach": "@body('Parse_JSON')?['choices']",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "finalanswer",
+                    "value": "@item()?['message']['content']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach"
+            },
+            "HTTP": {
+              "runAfter": {
+                "Initialize_variable": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Http",
+              "inputs": {
+                "body": {
+                  "max_tokens": 400,
+                  "messages": [
+                    {
+                      "content": "@variables('finalprompt')",
+                      "role": "user"
+                    }
+                  ],
+                  "temperature": "[json('0.2')]"
+                },
+                "headers": {
+                  "Content-Type": "application/json",
+                  "api-key": "[parameters('openAIServiceKey')]"
+                },
+                "method": "POST",
+                "uri": "[format('{0}openai/deployments/{1}/chat/completions?api-version=2023-05-15', parameters('openAIUri'), parameters('openAIDeploymentName'))]"
+              }
+            },
+            "Initialize_emailTo": {
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "emailto",
+                    "type": "string",
+                    "value": "@triggerBody()?['emailto']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Initialize_prompt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "InitializeVariable"
+            },
+            "Initialize_final_prompt": {
+              "runAfter": {
+                "Initialize_question": [
+                  "Succeeded"
+                ]
+              },
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "finalprompt",
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "Initialize_prompt": {
+              "runAfter": {},
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "prompt",
+                    "type": "string",
+                    "value": "You are a Helpdesk assistant. Extract the person's name and technical problem from the text below. Provide possible solutions including link to websites in html. If no solutions are found, respond with 'We will get back to you in 48 hrs'. \nIf this is a hardware problem give them tips for troubleshooting and indicate we will create a support ticket and schedule a repair within 48 hours."
+                  }
+                ]
+              }
+            },
+            "Initialize_question": {
+              "runAfter": {
+                "Initialize_emailTo": [
+                  "Succeeded"
+                ]
+              },
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "question",
+                    "type": "string",
+                    "value": "@triggerBody()?['question']"
+                  }
+                ]
+              }
+            },
+            "Initialize_variable": {
+              "runAfter": {
+                "Set_variable": [
+                  "Succeeded"
+                ]
+              },
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "finalanswer",
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "HTTP": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('HTTP')",
+                "schema": {
+                  "properties": {
+                    "choices": {
+                      "items": {
+                        "properties": {
+                          "finish_reason": {
+                            "type": "string"
+                          },
+                          "index": {
+                            "type": "integer"
+                          },
+                          "message": {
+                            "content": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "index",
+                          "finish_reason"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "created": {
+                      "type": "integer"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "object": {
+                      "type": "string"
+                    },
+                    "usage": {
+                      "properties": {
+                        "completion_tokens": {
+                          "type": "integer"
+                        },
+                        "prompt_tokens": {
+                          "type": "integer"
+                        },
+                        "total_tokens": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "Response": {
+              "runAfter": {
+                "Condition": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "body": "Done!",
+                "statusCode": 200
+              }
+            },
+            "Send_email_with_options": {
+              "runAfter": {
+                "For_each": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ApiConnectionWebhook",
+              "inputs": {
+                "body": {
+                  "Message": {
+                    "Body": "@variables('finalanswer')",
+                    "HideHTMLMessage": false,
+                    "Importance": "Normal",
+                    "Options": "Useful, Not Useful",
+                    "ShowHTMLConfirmationDialog": true,
+                    "Subject": "Automated response from your Helpdesk AI bot",
+                    "To": "@variables('emailto')"
+                  },
+                  "NotificationUrl": "@{listCallbackUrl()}"
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "path": "/mailwithoptions/$subscriptions"
+              }
+            },
+            "Set_variable": {
+              "runAfter": {
+                "Initialize_final_prompt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "finalprompt",
+                "value": "@{concat(variables('prompt'),' ',variables('question'))}"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "office365": {
+                "connectionId": "[resourceId('Microsoft.Web/connections', 'office365')]",
+                "connectionName": "office365",
+                "id": "[reference('Microsoft.Web/connections/office365', '2016-06-01').api.id]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', 'office365')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('readMailboxLogicAppName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "state": "Disabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "When_a_new_email_arrives_(V3)": {
+              "inputs": {
+                "fetch": {
+                  "method": "get",
+                  "pathTemplate": {
+                    "template": "/v3/Mail/OnNewEmail"
+                  },
+                  "queries": {
+                    "fetchOnlyWithAttachment": false,
+                    "folderPath": "Inbox",
+                    "importance": "Any",
+                    "includeAttachments": false,
+                    "subjectFilter": "Helpdesk bot"
+                  }
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "subscribe": {
+                  "body": {
+                    "NotificationUrl": "@{listCallbackUrl()}"
+                  },
+                  "method": "post",
+                  "pathTemplate": {
+                    "template": "/GraphMailSubscriptionPoke/$subscriptions"
+                  },
+                  "queries": {
+                    "fetchOnlyWithAttachment": false,
+                    "folderPath": "Inbox",
+                    "importance": "Any"
+                  }
+                }
+              },
+              "splitOn": "@triggerBody()?['value']",
+              "type": "ApiConnectionNotification"
+            }
+          },
+          "actions": {
+            "Compose": {
+              "runAfter": {
+                "Set_variable_3": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "emailto": "@{variables('emailto')}",
+                "question": "@{variables('question')}",
+                "subject": "@{triggerBody()?['Subject']}"
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Html_to_text": {
+                  "runAfter": {},
+                  "type": "ApiConnection",
+                  "inputs": {
+                    "body": "<p>@{triggerBody()?['Body']}</p>",
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['conversionservice']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/html2text"
+                  }
+                },
+                "Set_variable": {
+                  "runAfter": {
+                    "Html_to_text": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "question",
+                    "value": "@body('Html_to_text')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Initialize_variable_2": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Set_variable_2": {
+                    "runAfter": {},
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "question",
+                      "value": "@triggerBody()?['Body']"
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@triggerBody()?['IsHtml']",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "HTTP": {
+              "runAfter": {
+                "Compose": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Http",
+              "inputs": {
+                "body": "@outputs('Compose')",
+                "method": "POST",
+                "uri": "[listCallbackUrl(resourceId('Microsoft.Logic/workflows/triggers', parameters('emailLogicAppName'), 'manual'), '2019-05-01').value]"
+              }
+            },
+            "Initialize_variable": {
+              "runAfter": {},
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "question",
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "Initialize_variable_2": {
+              "runAfter": {
+                "Initialize_variable": [
+                  "Succeeded"
+                ]
+              },
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "emailto",
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "Set_variable_3": {
+              "runAfter": {
+                "Condition": [
+                  "Succeeded"
+                ]
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "emailto",
+                "value": "@triggerBody()?['From']"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "conversionservice": {
+                "connectionId": "[resourceId('Microsoft.Web/connections', 'conversionservice')]",
+                "connectionName": "conversionservice",
+                "id": "[reference('Microsoft.Web/connections/conversionservice', '2016-06-01').api.id]"
+              },
+              "office365": {
+                "connectionId": "[resourceId('Microsoft.Web/connections', 'office365')]",
+                "connectionName": "office365",
+                "id": "[reference('Microsoft.Web/connections/office365', '2016-06-01').api.id]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', 'conversionservice')]",
+        "[resourceId('Microsoft.Web/connections', 'office365')]",
+        "[resourceId('Microsoft.Logic/workflows', parameters('emailLogicAppName'))]"
+      ]
+    }
+  ]
+}

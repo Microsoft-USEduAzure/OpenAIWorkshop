@@ -8,25 +8,22 @@ In this lab you will lean how to use OpenAI to help answer common IT questions s
 
 ## Summary
 
-You will need to deploy 2 logic apps:
+You will deploy two Logic Apps. They will be deployed together.
 
-Logic App 1 (read-mailbox-techsupport): reads incoming email from an Outlook mailbox and calls Logic App2
+Logic App 1 (read-mailbox-techsupport): reads incoming email from an Outlook mailbox and calls Logic App 2.
 
 Logic App 2 (email-techsupport-integration): Calls Azure OpenAI for answers to the user support question and emails back a response.
 
-> [!NOTE]
-> We will deploy the second logic app (email-techsupport-integration) first, as we will need its URL when provisioning the first logic app (read-mailbox-techsupport).
-
 <img src="../../documents/images/lab-1-architecture.png" height=30%>
 
-## Step 1. Signin to Azure Portal
+## Step 1. Sign in to Azure Portal
 
 > [!IMPORTANT]
-> Use Edge or Chrome browser when making changes to the logic apps to prevent authorization issues when setting the **Connections** steps to your Microsoft 365 hosted mailbox
+> Use Edge or Chrome browser when making changes to the Logic Apps to prevent authorization issues when setting the **Connections** steps to your Microsoft 365 hosted mailbox.
 
-Go to https://portal.azure.com and enter your credentials
+Go to <https://portal.azure.com> and enter your credentials
 
-## Step 2. Deploy Logic App 2 (email-techsupport-integration)
+## Step 2. Deploy Logic Apps
 
 ### OpenAI Prompt Overview
 
@@ -39,95 +36,33 @@ If this is a hardware problem give them tips for troubleshooting and indicate we
 
 ---
 
-In this step you are going to perform the following actions to deploy and configure the logic app:
+In this step you are going to perform the following actions to deploy and configure the Logic App:
 
-- Deploy the logic app that sends the user question to OpenAI
-- Copy the URL for this Logic App for use in the first logic app
-- Enter Azure OpenAI authentication credentials
-- Configure your connection to Outlook
+1. Deploy the Logic App that sends the user question to OpenAI.
+1. Authorize the connection to your Office 365 mailbox.
+1. Enable the Logic App that reads your mailbox.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMicrosoft-USEduAzure%2FOpenAIWorkshop%2Fmain%2Flabs%2FLab_Automate_Mailbox_Responses%2Fscripts%2Fopen_ai_integration%2Ftemplate.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMicrosoft-USEduAzure%2FOpenAIWorkshop%2Fmain%2Flabs%2FLab_Automate_Mailbox_Responses%2Fscripts%2FlogicApps.json)
 
+After the deployment you should see four new items in your resource group:
 
-After the deployment you should see two new items in your resource group
+![A screenshot of the Azure Portal after deploying the Logic App template.](../../documents/images/lab-1-logicapp-1.png)
 
-![](../../documents/images/lab-1-logicapp-1.png)
+1. Click on the `office365` API Connection and click the **Edit API connection** menu
 
+1. Click **Authorize**. In the authentication dialog, sign in with your Office 365 account that has mailbox access.
 
-Click on the logic app and click on the edit button
+    ![A screenshot of the Edit API connection pane.](../../documents/images/lab-1-logicapp-2.png)
 
-![](../../documents/images/lab-1-logicapp-2.png)
+1. Click **Save**.
 
+1. Return to the Resource Group overview and click on the `read-mailbox-techsupport` Logic App.
 
-Expand the first Logic App Step named "When an HTTP request is received" and copy the URL to your text editor
+1. Click `Enable`.
 
-![](../../documents/images/lab-1-logicapp-3.png)
+    ![The Enable button for the Logic App.](../../documents/images/lab-1-logicapp-3.png)
 
-
-Scroll down to locate the Logic App Step named "HTTP". If the box is not already open, click the Title bar to open it.
-
-In the **URI** field, enter the URI of your Azure OpenAI Deployment endpoint, with the following format:
-
-**"https://<YOUR_AZURE_OPENAI_RESOURCENAME>.openai.azure.com/openai/deployments/<DEPLOYMENT_NAME>/chat/completions?api-version=2023-05-15"**
-
-You can find the <DEPLOYMENT_NAME> in the Azure OpenAI Studio Deployments blade as shown below:
-
-![](../../documents/images/lab-1-ModelName.png)
-
-
-In the **api-key** field, enter your Azure OpenAI API key.
-
-> [!NOTE]
-> Ensure the ?api-version for chat completions is recent, as new updates may have caused the api schema to change. See the **Supported versions** subsection, under **Completions** in [this article](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#completions).
-
-![](../../documents/images/lab-1-logicapp-4.png)
-
-
-Scroll down to the Logic App Step named **"Connections"**, the one with the Outlook logo, and expand it to enter new authorizaion credentials for your mailbox:
-
-![](../../documents/images/lab-1-logicapp-5.png)
-
-
-Scroll down to the Logic App Step named **"Condition"** and expand it, then expand the **True** box. Select the valid connection to send the final notification in this logic app.
-
-![](../../documents/images/lab-1-logicapp-6.png)
-
-
-Save the logic app.
-
-![](../../documents/images/lab-1-savelogicapp.png)
-
-### Step 3. Deploy Logic App 1 (read-mailbox-techsupport)
-
-This logic app scans a mail box every X minutes for new emails with the subject: **"Helpdesk Bot"**.
-
-![](../../documents/images/lab-1-logicapp-9.png)
-
-> [!IMPORTANT]
-> When you click the 'Deploy to Azure' button below, you will need to provide the URL to your second logic app (email-techsupport-integration) in the 'Email_integration_url' parameter field.
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMicrosoft-USEduAzure%2FOpenAIWorkshop%2Fmain%2Flabs%2FLab_Automate_Mailbox_Responses%2Fscripts%2Freadmailbox%2Ftemplate.json)
-
-In this step you are going to perform the following actions to deploy and configure the logic app:
-
-- Deploy the logic app that reads an Outlook mailbox and calls a logic app to send the user question to Azure OpenAI
-- Configure your connection to Outlook
-
-After the deployment you should see the new logic app in your resource group.
-
-![](../../documents/images/lab-1-logicapp-7.png)
-
-
-Click he new Logic App, then click the **Edit** button
-
-![](../../documents/images/lab-1-logicapp-readmailbox-clickedit.png)
-
-
-Select the top box titled **When a new email arrives (V3)** and select the appropiate connection to Office 365 outlook
-
-![](../../documents/images/lab-1-logicapp-8.png)
-
-### Step 4. Test
+### Step 3. Test
 
 Send an email, as follows, to the mailbox configured in your second logic app
 
@@ -146,8 +81,6 @@ Your Name
 
 ---
 
-
-Monitor your Inbox for the automated email response. As soon as you receive it, open the email and **click one of the options provided**:
+Monitor your inbox for the automated email response. As soon as you receive it, open the email and **click one of the options provided**:
 
 ![](../../documents/images/Lab-1-screenshot-automatedemailresponsewithoptions.png)
-
